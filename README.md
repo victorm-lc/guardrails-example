@@ -1,13 +1,54 @@
-# LangGraph Guardrails Example
+# Simple LangGraph Guardrails Example
 
-A comprehensive example demonstrating how to add guardrails to LangGraph applications using the entire LangChain ecosystem (LangSmith, LangGraph, LangGraph Platform).
+Learn the basics of adding safety guardrails to LangGraph applications! 
 
-## Overview
+This is a **beginner-friendly** example that shows essential patterns without complex abstractions.
 
-This project showcases two main approaches for implementing guardrails in LangGraph applications:
+## Quick Start (2 minutes!)
 
-1. **Custom Agent Implementation** - Integrating guardrails directly into custom LangGraph workflows
-2. **Prebuilt Agent Implementation** - Adding guardrails to existing prebuilt agents using post-model hooks
+### Simple Function Approach
+```python
+from simple_guardrails_agent import run_with_guardrails
+
+result = run_with_guardrails("What are the benefits of renewable energy?")
+
+if result["success"]:
+    print("✅", result["response"]) 
+else:
+    print("❌ Blocked:", result["blocked_reason"])
+```
+
+### Prebuilt Agent with Hooks
+```python
+from prebuilt_with_guardrails import run_safe_agent
+
+result = run_safe_agent("Search for information about climate change")
+
+if result["success"]:
+    print("✅", result["response"]) 
+else:
+    print("❌ Blocked:", result["blocked_reason"])
+```
+
+## What You'll Learn
+
+- ✅ **Input validation** - Check user messages before processing
+- ✅ **Output filtering** - Validate AI responses before returning  
+- ✅ **LangGraph conditional edges** - Route based on safety checks
+- ✅ **Pre/post-model hooks** - Add guardrails to existing agents
+- ✅ **Simple safety patterns** - Toxicity, PII, length checks
+
+## Two Approaches
+
+### 1. Custom Workflow (`simple_guardrails_agent.py`)
+- Build guardrails into a custom LangGraph workflow
+- Full control over the agent flow
+- Perfect for learning LangGraph concepts
+
+### 2. Prebuilt Agent with Hooks (`prebuilt_with_guardrails.py`)  
+- Add guardrails to existing ReAct agents
+- Uses pre-model and post-model hooks
+- Great for production applications
 
 ## Features
 
@@ -29,351 +70,125 @@ This project showcases two main approaches for implementing guardrails in LangGr
 
 ```
 guardrails-example/
-├── guardrails/                 # Core guardrails implementation
-│   ├── __init__.py
-│   ├── base.py                # Base classes and interfaces
-│   ├── content_filter.py      # Content safety filters
-│   ├── output_validator.py    # Output validation
-│   ├── compliance_checker.py  # Business rule compliance
-│   └── human_review.py        # Human-in-the-loop workflows
-├── custom_agent.py            # Custom LangGraph agent with guardrails
-├── prebuilt_agent.py          # Prebuilt agent with post-model hooks
-├── examples/                  # Usage examples and demos
-│   ├── basic_usage.py         # Basic implementation examples
-│   ├── industry_specific.py   # Industry-specific configurations
-│   └── human_review_demo.py   # Human review workflow demo
-├── langgraph.json             # LangGraph Platform config
-├── .env.example               # Environment variables template
-├── pyproject.toml             # Dependencies and project config
-└── plan.md                    # Detailed implementation plan
+├── simple_guardrails_agent.py     # Custom workflow with guardrails
+├── prebuilt_with_guardrails.py    # Prebuilt ReAct agent with hooks
+├── examples/                       # Usage examples and demos
+│   └── basic_usage.py             # Basic implementation examples
+├── .env.example                   # Environment variables template
+├── pyproject.toml                 # Dependencies and project config
+└── README.md                      # This file
 ```
 
-## Setup
+## Setup (2 minutes)
 
-### Prerequisites
-
-- Python 3.11+
-- OpenAI API key (for LLM integration)
-- LangSmith API key (optional, for tracing)
-
-### Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd guardrails-example
-   ```
-
-2. **Install dependencies**:
+1. **Install dependencies**:
    ```bash
    pip install -e .
-   # or with uv
-   uv pip install -e .
    ```
 
-3. **Set up environment variables**:
+2. **Add your OpenAI API key**:
    ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
+   export OPENAI_API_KEY="your-api-key-here"
    ```
 
-4. **Required environment variables**:
+3. **Run the examples**:
    ```bash
-   OPENAI_API_KEY=your_openai_api_key_here
-   LANGCHAIN_TRACING_V2=true
-   LANGCHAIN_API_KEY=your_langsmith_api_key_here
-   LANGCHAIN_PROJECT=guardrails-example
+   # Custom workflow approach
+   python simple_guardrails_agent.py
+   
+   # Prebuilt agent with hooks
+   python prebuilt_with_guardrails.py
    ```
 
-## Quick Start
-
-### Basic Usage
-
-```python
-import asyncio
-from custom_agent import CustomGuardrailAgent
-
-async def main():
-    agent = CustomGuardrailAgent()
-    
-    result = await agent.run("What's the weather like today?")
-    
-    print(f"Success: {result['success']}")
-    print(f"Response: {result['response']}")
-    
-    # Check guardrail results
-    for gr in result['guardrail_results']:
-        status = " PASS" if gr['passed'] else " FAIL"
-        print(f"{status} [{gr['step']}] {gr['message']}")
-
-asyncio.run(main())
-```
-
-### Running Examples
+### Optional: LangSmith Tracing
 
 ```bash
-# Basic usage examples
-python examples/basic_usage.py
-
-# Industry-specific configurations
-python examples/industry_specific.py
-
-# Human review workflows
-python examples/human_review_demo.py
+export LANGCHAIN_TRACING_V2=true
+export LANGCHAIN_API_KEY=your_langsmith_api_key_here
 ```
 
-## = Configuration
+## How It Works
 
-### Guardrail Configuration
+### Custom Workflow Approach
+The simple agent follows this flow:
 
-Customize guardrails in your `.env` file:
-
-```bash
-# Content Filter Settings
-CONTENT_FILTER_STRICT_MODE=false
-TOXICITY_THRESHOLD=0.7
-PII_DETECTION_ENABLED=true
-
-# Human Review Settings
-ENABLE_HUMAN_REVIEW=false
-REVIEW_TIMEOUT_SECONDS=300
-
-# Environment
-ENVIRONMENT=development
+```
+User Input → Input Validation → LLM → Output Validation → Safe Response
+     ↓               ↓              ↓            ↓
+  "Hello"        ✅ Safe        "Hello!"    ✅ Safe      "Hello!"
+"hate@me.com"   ❌ PII Block      —          —        "❌ Blocked: PII detected"
 ```
 
-### Industry-Specific Settings
+### Prebuilt Agent with Hooks
+The prebuilt agent uses hooks around the existing ReAct pattern:
 
-Configure guardrails for different industries:
+```
+User Input → Pre-Model Hook → ReAct Agent → Post-Model Hook → Safe Response
+     ↓            ↓               ↓              ↓
+  "Search X"   ✅ Safe      "I searched..."   ✅ Safe     "I searched..."
+"hate@me.com"  ❌ Block         —             —         "❌ Blocked: PII"
+```
+
+### Key Components
 
 ```python
-from guardrails import IndustryComplianceChecker, BusinessRuleChecker
+# 1. Input validation
+def check_input_safety(text: str) -> tuple[bool, str]:
+    if not text: return False, "Empty input"
+    if "hate" in text.lower(): return False, "Toxic content"
+    if "@" in text: return False, "PII detected"
+    return True, "Safe"
 
-# Healthcare
-healthcare_compliance = IndustryComplianceChecker(industry="healthcare")
-
-# Financial Services  
-financial_compliance = IndustryComplianceChecker(industry="financial")
-
-# Legal Services
-legal_compliance = IndustryComplianceChecker(industry="legal")
-```
-
-## Usage Examples
-
-### Custom Agent with Guardrails
-
-```python
-from custom_agent import CustomGuardrailAgent
-
-agent = CustomGuardrailAgent()
-
-# The agent automatically validates inputs and outputs
-result = await agent.run("Help me with my investment strategy")
-
-# Check results
-if result['success']:
-    print(result['response'])
-else:
-    print("Request blocked by guardrails")
-    for violation in result['guardrail_results']:
-        if not violation['passed']:
-            print(f"- {violation['message']}")
-```
-
-### Prebuilt Agent with Post-Model Hooks
-
-```python
-from prebuilt_agent import PrebuiltGuardrailAgent
-
-agent = PrebuiltGuardrailAgent()
-
-# Uses create_react_agent with guardrail hooks
-result = await agent.run("Calculate 25 * 13 and search for weather info")
-
-# Show guardrail summary
-print(agent.get_guardrail_summary(result))
-```
-
-### Custom Guardrails
-
-```python
-from guardrails import GuardrailManager, ToxicityFilter, PIIFilter
-
-# Create custom guardrail configuration
-manager = GuardrailManager()
-manager.add_guardrail(ToxicityFilter(threshold=0.5))
-manager.add_guardrail(PIIFilter())
-
-# Check content
-results = await manager.check_all("Test content here")
-for result in results:
-    if not result.passed:
-        print(f"Violation: {result.message}")
-```
-
-## Industry-Specific Examples
-
-### Healthcare
-
-```python
-from guardrails import IndustryComplianceChecker, BusinessRuleChecker
-
-# Setup healthcare-specific guardrails
-healthcare_rules = [{
-    "name": "medical_advice_disclaimer",
-    "pattern": r'\b(diagnose|treatment|medication)\b',
-    "severity": "high",
-    "action": "require_disclaimer",
-    "disclaimer": "This is not medical advice. Consult a healthcare professional."
-}]
-
-business_checker = BusinessRuleChecker()
-for rule in healthcare_rules:
-    business_checker.add_rule(rule)
-```
-
-### Financial Services
-
-```python
-# Financial compliance guardrails
-financial_rules = [{
-    "name": "investment_disclaimer", 
-    "pattern": r'\b(invest|trading|financial advice)\b',
-    "severity": "high",
-    "action": "require_disclaimer",
-    "disclaimer": "This is not financial advice. Consult a qualified advisor."
-}]
-```
-
-## Human Review Workflows
-
-### Basic Approval Workflow
-
-```python
-from guardrails import ApprovalWorkflow
-
-# Setup approval for sensitive operations
-approval = ApprovalWorkflow(
-    approval_keywords=["delete", "ban", "refund", "credit"]
+# 2. LangGraph workflow
+workflow.add_conditional_edges(
+    "validate_input",
+    should_continue_after_input_validation,
+    {"continue": "generate", "block": "block"}
 )
 
-result = await approval.check("Please delete my account")
-if not result.passed:
-    print("Requires human approval")
+# 3. Simple to understand!
 ```
 
-### Advanced Human Review
+## Customize Your Guardrails
+
+Easily modify the simple agent for your needs:
 
 ```python
-from guardrails import HumanReviewManager
-
-# Setup human review manager
-review_manager = HumanReviewManager(
-    timeout_seconds=300,
-    enabled=True
-)
-
-# Check content that may require human review
-result = await review_manager.check("Sensitive content here")
-
-# Handle review results
-if result.passed:
-    print("Approved by reviewer")
-else:
-    print("Rejected or timed out")
+def check_input_safety(text: str) -> tuple[bool, str]:
+    # Add your own rules here!
+    
+    if "bitcoin" in text.lower():
+        return False, "No crypto discussion allowed"
+    
+    if len(text) > 500:  # Adjust length limit
+        return False, "Please keep messages under 500 chars"
+    
+    return True, "Safe"
 ```
 
-## Monitoring and Observability
+## Common Use Cases
 
-### LangSmith Integration
+1. **Customer Service Bot** - Block toxic messages, detect PII
+2. **Content Moderation** - Filter inappropriate responses
+3. **Compliance** - Ensure responses include required disclaimers  
+4. **Data Protection** - Prevent leaking sensitive information
 
-The project automatically integrates with LangSmith for tracing and monitoring:
+## Next Steps
 
-```python
-# Tracing is enabled via environment variables
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=your_api_key
-```
+Ready for more? Consider these production patterns:
 
-### Guardrail Metrics
-
-```python
-# Access detailed metrics
-result = await agent.run("Test query")
-
-for gr in result['guardrail_results']:
-    print(f"Guardrail: {gr['guardrail']}")
-    print(f"Step: {gr['step']}")
-    print(f"Severity: {gr['severity']}")
-    print(f"Passed: {gr['passed']}")
-```
-
-## Testing
-
-### Run Basic Tests
-
-```bash
-# Test all examples
-python examples/basic_usage.py
-python examples/industry_specific.py  
-python examples/human_review_demo.py
-```
-
-### Custom Testing
-
-```python
-# Test specific guardrails
-from guardrails import ToxicityFilter
-
-filter = ToxicityFilter(threshold=0.7)
-result = await filter.check("Test content")
-assert result.passed == True
-```
-
-## Performance Considerations
-
-### Optimization Tips
-
-1. **Parallel Processing**: Run multiple guardrails concurrently
-2. **Caching**: Cache guardrail results for repeated content
-3. **Thresholds**: Adjust thresholds based on your use case
-4. **Fail Fast**: Use fail_fast mode to stop on first violation
-
-```python
-# Optimized guardrail checking
-results = await manager.check_all(
-    content,
-    fail_fast=True,  # Stop on first failure
-    context={"cached": True}
-)
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new guardrails
-4. Update documentation
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License. See LICENSE file for details.
-
-## Support
-
-- Check the [examples/](examples/) directory for usage patterns
-- Review [plan.md](plan.md) for implementation details
-- Open issues for bugs or feature requests
+- **Human-in-the-loop** workflows for sensitive content
+- **Industry-specific** compliance rules (healthcare, finance, legal)  
+- **Multi-layered** validation with severity levels
+- **Performance optimization** with parallel processing
+- **Monitoring** with LangSmith tracing
 
 ## Related Resources
 
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
 - [LangSmith Tracing](https://docs.smith.langchain.com/)
-- [LangGraph Platform](https://www.langchain.com/langgraph)
 - [Guardrails AI](https://www.guardrailsai.com/)
 
 ---
 
-This example demonstrates production-ready patterns for implementing guardrails in LangGraph applications. Use it as a starting point for your own guardrail implementations!
+**Perfect for learning LangGraph guardrails! Start simple, then explore advanced patterns.**

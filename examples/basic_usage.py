@@ -1,11 +1,9 @@
 """
 Basic usage examples for LangGraph guardrails.
 
-This script demonstrates simple usage patterns for both custom and prebuilt agents
-with guardrails integrated.
+This script demonstrates the simple guardrails agent - perfect for beginners!
 """
 
-import asyncio
 import os
 import sys
 from pathlib import Path
@@ -13,17 +11,16 @@ from pathlib import Path
 # Add parent directory to path to import our modules
 sys.path.append(str(Path(__file__).parent.parent))
 
-from custom_agent import CustomGuardrailAgent
-from prebuilt_agent import PrebuiltGuardrailAgent
+from simple_guardrails_agent import SimpleGuardrailAgent
 
 
-async def run_custom_agent_examples():
-    """Run examples with the custom agent implementation."""
+def run_simple_agent_examples():
+    """Run examples with the simple guardrails agent."""
     print("="*60)
-    print("CUSTOM AGENT EXAMPLES")
+    print("SIMPLE GUARDRAILS AGENT EXAMPLES")
     print("="*60)
     
-    agent = CustomGuardrailAgent()
+    agent = SimpleGuardrailAgent()
     
     examples = [
         {
@@ -32,182 +29,74 @@ async def run_custom_agent_examples():
             "expected": "Should pass all guardrails"
         },
         {
-            "name": "PII Detection",
-            "input": "My email is john.doe@example.com and my phone is 555-123-4567. Can you help me?",
-            "expected": "Should detect PII but not necessarily block"
+            "name": "PII Detection", 
+            "input": "My email is john.doe@example.com, can you help me?",
+            "expected": "Should detect email and block"
         },
         {
             "name": "Toxic Content",
-            "input": "I hate this stupid system and everyone who uses it!",
-            "expected": "Should be flagged for toxicity"
+            "input": "I hate this stupid system!",
+            "expected": "Should detect toxic keywords and block"
         },
         {
-            "name": "Business Rule Trigger",
-            "input": "Can you give me specific investment advice for buying stocks?",
-            "expected": "Should trigger business rule requiring disclaimer"
-        }
-    ]
-    
-    for example in examples:
-        print(f"\n--- {example['name']} ---")
-        print(f"Input: {example['input']}")
-        print(f"Expected: {example['expected']}")
-        
-        try:
-            result = await agent.run(example['input'])
-            
-            print(f"Success: {result['success']}")
-            print(f"Final Step: {result['current_step']}")
-            
-            if result['success']:
-                print(f"Response: {result['response'][:100]}...")
-            
-            # Show guardrail results
-            violations_count = sum(1 for r in result['guardrail_results'] if not r['passed'])
-            print(f"Guardrails: {len(result['guardrail_results']) - violations_count}/{len(result['guardrail_results'])} passed")
-            
-            for gr in result['guardrail_results']:
-                if not gr['passed']:
-                    print(f"  ❌ [{gr['step']}] {gr['message']}")
-                    for violation in gr['violations']:
-                        print(f"     - {violation}")
-        
-        except Exception as e:
-            print(f"Error: {e}")
-
-
-async def run_prebuilt_agent_examples():
-    """Run examples with the prebuilt agent implementation."""
-    print("\n" + "="*60)
-    print("PREBUILT AGENT EXAMPLES")
-    print("="*60)
-    
-    agent = PrebuiltGuardrailAgent()
-    
-    examples = [
-        {
-            "name": "Tool Usage - Weather",
-            "input": "What's the weather like in New York?",
-            "expected": "Should use weather tool and pass guardrails"
-        },
-        {
-            "name": "Tool Usage - Calculator", 
-            "input": "Calculate 25 * 13 + 7",
-            "expected": "Should use calculator tool"
-        },
-        {
-            "name": "PII in Query",
-            "input": "Search for information about user@company.com",
-            "expected": "Should detect PII in input"
-        },
-        {
-            "name": "Profanity Filter",
-            "input": "This damn calculator doesn't work properly",
-            "expected": "Should detect mild profanity"
-        }
-    ]
-    
-    for example in examples:
-        print(f"\n--- {example['name']} ---")
-        print(f"Input: {example['input']}")
-        print(f"Expected: {example['expected']}")
-        
-        try:
-            result = await agent.run(example['input'])
-            
-            print(f"Success: {result['success']}")
-            print(f"Blocked: {result['blocked']}")
-            
-            if result['success'] and result['response']:
-                print(f"Response: {result['response'][:150]}...")
-            
-            # Show guardrail summary
-            summary = agent.get_guardrail_summary(result)
-            print(f"Guardrail Summary:\n{summary}")
-        
-        except Exception as e:
-            print(f"Error: {e}")
-
-
-async def run_guardrails_stress_test():
-    """Test guardrails with challenging inputs."""
-    print("\n" + "="*60)
-    print("GUARDRAILS STRESS TEST")
-    print("="*60)
-    
-    # Use prebuilt agent for stress test
-    agent = PrebuiltGuardrailAgent()
-    
-    stress_tests = [
-        {
-            "name": "Multiple PII Types",
-            "input": "My name is John Smith, email john@test.com, phone 555-1234, SSN 123-45-6789",
-            "expected": "Should detect multiple PII types"
-        },
-        {
-            "name": "Mixed Content",
-            "input": "I hate this system! My email is test@example.com. Give me financial advice now!",
-            "expected": "Should trigger multiple guardrails"
-        },
-        {
-            "name": "Very Long Input",
-            "input": "This is a very long query. " * 100,
-            "expected": "Should handle length validation"
+            "name": "Medical Advice",
+            "input": "Should I take medicine for my headache?",
+            "expected": "Should work but may need disclaimer in response"
         },
         {
             "name": "Empty Input",
             "input": "",
-            "expected": "Should handle empty input gracefully"
+            "expected": "Should block empty input"
+        },
+        {
+            "name": "Too Long",
+            "input": "This is a very long message. " * 100,
+            "expected": "Should block input that's too long"
         }
     ]
     
-    for test in stress_tests:
-        print(f"\n--- {test['name']} ---")
-        print(f"Input Length: {len(test['input'])} chars")
-        print(f"Expected: {test['expected']}")
+    for example in examples:
+        print(f"\n--- {example['name']} ---")
+        print(f"Input: {example['input'][:50]}{'...' if len(example['input']) > 50 else ''}")
+        print(f"Expected: {example['expected']}")
         
         try:
-            result = await agent.run(test['input'])
+            result = agent.run(example['input'])
             
-            print(f"Success: {result['success']}")
-            print(f"Blocked: {result['blocked']}")
+            if result['success']:
+                print("✅ SUCCESS")
+                print(f"Response: {result['response'][:150]}...")
+            else:
+                print("❌ BLOCKED")
+                print(f"Reason: {result['blocked_reason']}")
             
-            # Count violations
-            input_violations = sum(1 for r in result['input_guardrail_results'] if not r.get('passed', True))
-            output_violations = sum(1 for r in result['output_guardrail_results'] if not r.get('passed', True))
-            
-            print(f"Input Violations: {input_violations}")
-            print(f"Output Violations: {output_violations}")
-            
-            # Show first few violations
-            all_results = result['input_guardrail_results'] + result['output_guardrail_results']
-            for gr in all_results[:3]:  # Show first 3 violations
-                if isinstance(gr, dict) and not gr.get('passed', True):
-                    print(f"  ❌ {gr.get('message', 'Unknown violation')}")
+            print(f"Input Safe: {result['input_safe']} | Output Safe: {result['output_safe']}")
         
         except Exception as e:
             print(f"Error: {e}")
 
 
-async def main():
-    """Main function to run all examples."""
-    print("LangGraph Guardrails - Basic Usage Examples")
-    print("This demonstrates how to use guardrails with LangGraph agents")
+def main():
+    """Main function to run the simple examples."""
+    print("LangGraph Guardrails - Simple Example")
+    print("This demonstrates the basics of using guardrails with LangGraph")
+    print("Perfect for beginners learning the concepts!")
     
     try:
-        await run_custom_agent_examples()
-        await run_prebuilt_agent_examples()
-        await run_guardrails_stress_test()
+        run_simple_agent_examples()
         
         print("\n" + "="*60)
-        print("EXAMPLES COMPLETED")
+        print("SIMPLE EXAMPLES COMPLETED")
         print("="*60)
         print("✅ All examples executed successfully!")
-        print("\nKey takeaways:")
-        print("- Custom agents provide fine-grained control over guardrail placement")
-        print("- Prebuilt agents offer easy integration via hooks")
-        print("- Guardrails can detect various types of harmful content")
-        print("- Multiple guardrails can work together for comprehensive protection")
+        print("\nWhat you learned:")
+        print("- How to validate user input before processing")
+        print("- How to check AI output for safety issues")
+        print("- How to use LangGraph conditional edges for guardrails")
+        print("- Simple pattern matching for content filtering")
+        print("\nNext steps:")
+        print("- Check out advanced_custom_agent.py for complex patterns")
+        print("- Look at the guardrails/ folder for specialized validators")
         
     except Exception as e:
         print(f"Error running examples: {e}")
@@ -222,4 +111,4 @@ if __name__ == "__main__":
         print("Please set your OpenAI API key in .env file or environment")
         sys.exit(1)
     
-    asyncio.run(main())
+    main()
